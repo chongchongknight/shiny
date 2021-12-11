@@ -1,0 +1,11 @@
+name: shiny
+title:
+username:
+account: chongchongknight
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5309192
+bundleId: 5358605
+url: https://chongchongknight.shinyapps.io/shiny/
+when: 1639203095.20569
+lastSyncTime: 1639203095.2057

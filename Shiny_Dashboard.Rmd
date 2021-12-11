@@ -1,0 +1,119 @@
+---
+title: "Shiny Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(shiny)
+```
+
+```{r data import}
+df20_tidy = 
+  read_csv("../final data/2020data.csv") %>% 
+  janitor::clean_names() %>% 
+  filter(!is.na(name_of_borough), 
+         vic_age_group %in% c("<18", "18-24", "25-44", "45-64", "65+"), 
+         !is.na(vic_race),
+         vic_race != "UNKNOWN",
+         vic_sex %in% c("M", "F")) %>% 
+  mutate(month = as.numeric(month))
+
+df20_susp = read_csv("../final data/2020data.csv") %>% 
+  janitor::clean_names() %>% 
+  filter(!is.na(name_of_borough), 
+         susp_age_group %in% c("<18", "18-24", "25-44", "45-64", "65+"), 
+         !is.na(susp_race),
+         susp_race != "UNKNOWN",
+         susp_sex %in% c("M", "F")) %>% 
+  mutate(month = as.numeric(month))
+```
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+boros = df20_tidy %>% 
+  distinct(name_of_borough) %>% pull()
+
+characteristics = c("sex", "age_group", "race")
+
+selectInput(
+  "boro_choice", 
+  label = h3("Select boro"),
+  choices = boros, selected = "MANHATTAN")
+
+sliderInput(
+  "month", 
+  label = h3("Choose month"), 
+  min = 1, max = 12, value = c(2, 4))
+
+radioButtons(
+  "victim_characteristics", 
+  label = h3("Choose victim characteristics"),
+  choices = characteristics, selected = "sex")
+
+radioButtons(
+  "suspect_characteristics", 
+  label = h3("Choose suspect characteristics"),
+  choices = characteristics, selected = "sex")
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+renderPlotly({
+  df20_tidy %>%
+  filter(
+    name_of_borough == input$boro_choice, 
+    month %in% input$month[1]:input$month[2]) %>%
+    plot_ly(
+    x = ~longitude, y = ~latitude, type = "scatter", mode = "markers",
+    alpha = 0.02)
+})
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+renderPlotly({
+  df20_tidy %>%
+  filter(
+    name_of_borough == input$boro_choice, 
+    month %in% input$month[1]:input$month[2]) %>% 
+    select(str_c("vic_", input$victim_characteristics)) %>% 
+    table() %>% 
+    data.frame() %>% 
+    plot_ly(
+    x = ~., y = ~Freq, type = "bar") 
+})
+```
+
+### Chart C
+
+```{r}
+renderPlotly({
+  df20_susp %>%
+  filter(
+    name_of_borough == input$boro_choice, 
+    month %in% input$month[1]:input$month[2]) %>% 
+    select(str_c("susp_", input$suspect_characteristics)) %>% 
+    table() %>% 
+    data.frame() %>% 
+    plot_ly(
+    x = ~., y = ~Freq, type = "bar") 
+})
+```
